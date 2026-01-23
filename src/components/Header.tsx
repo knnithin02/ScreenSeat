@@ -1,9 +1,35 @@
-import { Search, MapPin, Menu, X } from "lucide-react";
+import { Search, MapPin, Menu, X, LogOut, User, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-const Header = () => {
+interface HeaderProps {
+  onAuthClick: () => void;
+}
+
+const Header = ({ onAuthClick }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, profile, signOut } = useAuth();
+
+  const getInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return user?.email?.[0].toUpperCase() || "U";
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -39,10 +65,49 @@ const Header = () => {
               <span>Mumbai</span>
             </button>
 
-            {/* Sign In Button */}
-            <Button variant="hero" size="sm" className="hidden sm:flex">
-              Sign In
-            </Button>
+            {/* Auth Section */}
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10 border-2 border-primary">
+                      <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                        {getInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-card border-border" align="end">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium text-foreground">
+                      {profile?.full_name || "User"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                  <DropdownMenuSeparator className="bg-border" />
+                  <DropdownMenuItem className="cursor-pointer text-muted-foreground hover:text-foreground">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer text-muted-foreground hover:text-foreground">
+                    <Ticket className="mr-2 h-4 w-4" />
+                    My Bookings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-border" />
+                  <DropdownMenuItem
+                    onClick={() => signOut()}
+                    className="cursor-pointer text-destructive hover:text-destructive"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="hero" size="sm" className="hidden sm:flex" onClick={onAuthClick}>
+                Sign In
+              </Button>
+            )}
 
             {/* Mobile Menu Toggle */}
             <button
@@ -70,9 +135,11 @@ const Header = () => {
                 <MapPin className="w-4 h-4" />
                 <span>Mumbai</span>
               </button>
-              <Button variant="hero" size="sm">
-                Sign In
-              </Button>
+              {!user && (
+                <Button variant="hero" size="sm" onClick={onAuthClick}>
+                  Sign In
+                </Button>
+              )}
             </div>
           </div>
         )}

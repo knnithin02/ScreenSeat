@@ -1,17 +1,44 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Star, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { featuredMovies } from "@/data/movies";
+import { useFeaturedMovies, type Movie } from "@/hooks/useMovies";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const HeroCarousel = () => {
+interface HeroCarouselProps {
+  onBookClick: (movie: Movie) => void;
+}
+
+const HeroCarousel = ({ onBookClick }: HeroCarouselProps) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { data: featuredMovies, isLoading } = useFeaturedMovies();
 
   useEffect(() => {
+    if (!featuredMovies?.length) return;
+    
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % featuredMovies.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [featuredMovies?.length]);
+
+  if (isLoading) {
+    return (
+      <section className="relative h-[500px] md:h-[600px] overflow-hidden bg-secondary">
+        <div className="container mx-auto px-4 h-full pt-28">
+          <div className="max-w-2xl space-y-4">
+            <Skeleton className="h-8 w-32 bg-muted" />
+            <Skeleton className="h-16 w-96 bg-muted" />
+            <Skeleton className="h-6 w-64 bg-muted" />
+            <Skeleton className="h-12 w-48 bg-muted" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!featuredMovies?.length) {
+    return null;
+  }
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % featuredMovies.length);
@@ -29,7 +56,7 @@ const HeroCarousel = () => {
       <div
         className="absolute inset-0 transition-all duration-700 ease-out"
         style={{
-          backgroundImage: `url(${movie.banner})`,
+          backgroundImage: `url(${movie.banner_url || movie.poster_url})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -72,12 +99,12 @@ const HeroCarousel = () => {
               <span>•</span>
               <span>{movie.language}</span>
               <span>•</span>
-              <span>{movie.releaseDate}</span>
+              <span>{movie.release_date}</span>
             </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap gap-4">
-              <Button variant="hero" size="lg">
+              <Button variant="hero" size="lg" onClick={() => onBookClick(movie)}>
                 Book Tickets
               </Button>
               <Button variant="glass" size="lg" className="gap-2">
