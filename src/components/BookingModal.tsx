@@ -9,6 +9,7 @@ import { useCreateBooking, useUpdateBookingStatus } from "@/hooks/useBookings";
 import type { Movie } from "@/hooks/useMovies";
 import { ArrowLeft, Calendar, Clock, CreditCard, Loader2, MapPin, Minus, Plus, Star, Ticket } from "lucide-react";
 import { format, addDays } from "date-fns";
+import SeatMap from "./SeatMap";
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -63,11 +64,12 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
   const createBooking = useCreateBooking();
   const updateBookingStatus = useUpdateBookingStatus();
   
-  const [step, setStep] = useState<"theater" | "select" | "payment" | "success">("theater");
+  const [step, setStep] = useState<"theater" | "select" | "seats" | "payment" | "success">("theater");
   const [selectedTheater, setSelectedTheater] = useState<Theater | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [seats, setSeats] = useState(1);
+  const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
 
@@ -86,7 +88,27 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
   const handleBackToTheaters = () => {
     setSelectedTheater(null);
     setSelectedTime("");
+    setSelectedSeatIds([]);
     setStep("theater");
+  };
+
+  const handleBackToSelect = () => {
+    setSelectedSeatIds([]);
+    setStep("select");
+  };
+
+  const handleProceedToSeats = () => {
+    setSelectedSeatIds([]);
+    setStep("seats");
+  };
+
+  const handleSeatToggle = (seatId: string) => {
+    setSelectedSeatIds((prev) => {
+      if (prev.includes(seatId)) {
+        return prev.filter((id) => id !== seatId);
+      }
+      return [...prev, seatId];
+    });
   };
 
   const handleProceedToPayment = async () => {
@@ -96,6 +118,14 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
     }
 
     if (!selectedTheater) return;
+    if (selectedSeatIds.length !== seats) {
+      toast({
+        title: "Select Seats",
+        description: `Please select exactly ${seats} seat(s) to continue.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsProcessing(true);
     
@@ -105,7 +135,7 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
         seats,
         total_amount: totalAmount,
         show_date: format(selectedDate, "yyyy-MM-dd"),
-        show_time: `${selectedTime} @ ${selectedTheater.name}`,
+        show_time: `${selectedTime} @ ${selectedTheater.name} (${selectedSeatIds.sort().join(", ")})`,
         status: "pending",
       });
 
@@ -163,6 +193,7 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
     setSelectedTheater(null);
     setSelectedTime("");
     setSeats(1);
+    setSelectedSeatIds([]);
     setBookingId(null);
     onClose();
   };
@@ -173,7 +204,8 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-foreground">
             {step === "theater" && "Book Tickets"}
-            {step === "select" && "Select Seats"}
+            {step === "select" && "How Many Tickets?"}
+            {step === "seats" && "Select Your Seats"}
             {step === "payment" && "Payment"}
             {step === "success" && "Booking Confirmed!"}
           </DialogTitle>
@@ -357,11 +389,76 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
             <Button
               variant="hero"
               className="w-full"
+              onClick={handleProceedToSeats}
+            >
+              Select Seats
+            </Button>
+          </div>
+        )}
+
+        {step === "seats" && selectedTheater && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Back Button */}
+            <button
+              onClick={handleBackToSelect}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to ticket count
+            </button>
+
+            {/* Booking Info Summary */}
+            <div className="bg-secondary rounded-lg p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-foreground font-medium">{movie.title}</span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-muted-foreground">{selectedTheater.name}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 mt-1 text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {format(selectedDate, "MMM d")}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {selectedTime}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Ticket className="w-3 h-3" />
+                  {seats} ticket(s)
+                </span>
+              </div>
+            </div>
+
+            {/* Seat Map */}
+            <SeatMap
+              maxSeats={seats}
+              selectedSeats={selectedSeatIds}
+              onSeatToggle={handleSeatToggle}
+              theaterId={selectedTheater.id}
+              showtime={selectedTime}
+            />
+
+            {/* Total */}
+            <div className="flex items-center justify-between py-4 border-t border-border">
+              <span className="text-muted-foreground">Total Amount</span>
+              <span className="text-2xl font-bold text-primary">₹{totalAmount}</span>
+            </div>
+
+            <Button
+              variant="hero"
+              className="w-full"
               onClick={handleProceedToPayment}
-              disabled={isProcessing}
+              disabled={isProcessing || selectedSeatIds.length !== seats}
             >
               {isProcessing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {user ? "Proceed to Payment" : "Sign in to Book"}
+              {user 
+                ? selectedSeatIds.length === seats 
+                  ? "Proceed to Payment" 
+                  : `Select ${seats - selectedSeatIds.length} more seat(s)`
+                : "Sign in to Book"}
             </Button>
           </div>
         )}
@@ -383,6 +480,12 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
                 <span className="text-muted-foreground">Date & Time</span>
                 <span className="text-foreground">
                   {format(selectedDate, "MMM d")} • {selectedTime}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Seats</span>
+                <span className="text-foreground font-mono">
+                  {selectedSeatIds.sort().join(", ")}
                 </span>
               </div>
               <div className="flex justify-between font-semibold pt-2 border-t border-border">
@@ -478,7 +581,9 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Seats</span>
-                <span className="text-foreground">{seats}</span>
+                <span className="text-foreground font-mono">
+                  {selectedSeatIds.sort().join(", ")}
+                </span>
               </div>
             </div>
 
