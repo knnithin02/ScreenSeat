@@ -396,7 +396,7 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
           </div>
         )}
 
-        {step === "seats" && selectedTheater && (
+        {step === "seats" && (
           <div className="space-y-6 animate-fade-in">
             {/* Back Button */}
             <button
@@ -412,8 +412,12 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-foreground font-medium">{movie.title}</span>
-                  <span className="text-muted-foreground">•</span>
-                  <span className="text-muted-foreground">{selectedTheater.name}</span>
+                  {selectedTheater && (
+                    <>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="text-muted-foreground">{selectedTheater.name}</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 mt-1 text-muted-foreground">
@@ -421,10 +425,12 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
                   <Calendar className="w-3 h-3" />
                   {format(selectedDate, "MMM d")}
                 </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {selectedTime}
-                </span>
+                {selectedTime && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {selectedTime}
+                  </span>
+                )}
                 <span className="flex items-center gap-1">
                   <Ticket className="w-3 h-3" />
                   {seats} ticket(s)
@@ -460,40 +466,70 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
               </div>
             </div>
 
-            {/* Showtimes Row */}
+            {/* Theaters & Showtimes for Selected Date */}
             <div>
               <Label className="flex items-center gap-2 mb-3 text-foreground">
-                <Clock className="w-4 h-4" />
-                Select Showtime
+                <MapPin className="w-4 h-4" />
+                Select Theater & Showtime
               </Label>
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {selectedTheater.showtimes.map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => {
-                      setSelectedTime(time);
-                      setSelectedSeatIds([]); // Reset seats when time changes
-                    }}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
-                      selectedTime === time
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:bg-secondary/80 border border-border"
+              <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+                {theaters.map((theater) => (
+                  <div
+                    key={theater.id}
+                    className={`rounded-lg p-3 border transition-all ${
+                      selectedTheater?.id === theater.id
+                        ? "bg-primary/10 border-primary"
+                        : "bg-secondary border-border hover:border-primary/50"
                     }`}
                   >
-                    {time}
-                  </button>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium text-foreground text-sm">{theater.name}</h4>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {theater.location}
+                        </p>
+                      </div>
+                      <span className="text-xs text-primary font-medium">
+                        ₹{Math.round(Number(movie.price) * theater.priceMultiplier)}
+                      </span>
+                    </div>
+                    
+                    {/* Showtimes */}
+                    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                      {theater.showtimes.map((time) => (
+                        <button
+                          key={`${theater.id}-${time}`}
+                          onClick={() => {
+                            setSelectedTheater(theater);
+                            setSelectedTime(time);
+                            setSelectedSeatIds([]); // Reset seats when theater/time changes
+                          }}
+                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex-shrink-0 ${
+                            selectedTheater?.id === theater.id && selectedTime === time
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background border border-border text-foreground hover:border-primary hover:text-primary"
+                          }`}
+                        >
+                          {time}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* Seat Map */}
-            <SeatMap
-              maxSeats={seats}
-              selectedSeats={selectedSeatIds}
-              onSeatToggle={handleSeatToggle}
-              theaterId={selectedTheater.id}
-              showtime={`${format(selectedDate, "yyyy-MM-dd")}-${selectedTime}`}
-            />
+            {/* Seat Map - Only show when theater and time are selected */}
+            {selectedTheater && selectedTime && (
+              <SeatMap
+                maxSeats={seats}
+                selectedSeats={selectedSeatIds}
+                onSeatToggle={handleSeatToggle}
+                theaterId={selectedTheater.id}
+                showtime={`${format(selectedDate, "yyyy-MM-dd")}-${selectedTime}`}
+              />
+            )}
 
             {/* Total */}
             <div className="flex items-center justify-between py-4 border-t border-border">
