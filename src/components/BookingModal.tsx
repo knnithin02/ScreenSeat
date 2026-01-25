@@ -432,13 +432,67 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
               </div>
             </div>
 
+            {/* Horizontal Date Selection Row */}
+            <div>
+              <Label className="flex items-center gap-2 mb-3 text-foreground">
+                <Calendar className="w-4 h-4" />
+                Select Date
+              </Label>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {availableDates.map((date) => (
+                  <button
+                    key={date.toISOString()}
+                    onClick={() => {
+                      setSelectedDate(date);
+                      setSelectedSeatIds([]); // Reset seats when date changes
+                    }}
+                    className={`flex flex-col items-center px-3 py-2 rounded-lg min-w-[60px] transition-all flex-shrink-0 ${
+                      format(selectedDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:bg-secondary/80 border border-border"
+                    }`}
+                  >
+                    <span className="text-xs">{format(date, "EEE")}</span>
+                    <span className="text-lg font-semibold">{format(date, "d")}</span>
+                    <span className="text-xs">{format(date, "MMM")}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Showtimes Row */}
+            <div>
+              <Label className="flex items-center gap-2 mb-3 text-foreground">
+                <Clock className="w-4 h-4" />
+                Select Showtime
+              </Label>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {selectedTheater.showtimes.map((time) => (
+                  <button
+                    key={time}
+                    onClick={() => {
+                      setSelectedTime(time);
+                      setSelectedSeatIds([]); // Reset seats when time changes
+                    }}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex-shrink-0 ${
+                      selectedTime === time
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-muted-foreground hover:bg-secondary/80 border border-border"
+                    }`}
+                  >
+                    {time}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Seat Map */}
             <SeatMap
               maxSeats={seats}
               selectedSeats={selectedSeatIds}
               onSeatToggle={handleSeatToggle}
               theaterId={selectedTheater.id}
-              showtime={selectedTime}
+              showtime={`${format(selectedDate, "yyyy-MM-dd")}-${selectedTime}`}
             />
 
             {/* Total */}
