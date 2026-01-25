@@ -439,30 +439,43 @@ const BookingModal = ({ isOpen, onClose, movie, onRequireAuth }: BookingModalPro
             </div>
 
             {/* Horizontal Date Selection Row */}
-            <div>
-              <Label className="flex items-center gap-2 mb-3 text-foreground">
-                <Calendar className="w-4 h-4" />
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2 text-foreground">
+                <Calendar className="w-4 h-4 text-primary" />
                 Select Date
               </Label>
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {availableDates.map((date) => (
-                  <button
-                    key={date.toISOString()}
-                    onClick={() => {
-                      setSelectedDate(date);
-                      setSelectedSeatIds([]); // Reset seats when date changes
-                    }}
-                    className={`flex flex-col items-center px-3 py-2 rounded-lg min-w-[60px] transition-all flex-shrink-0 ${
-                      format(selectedDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-muted-foreground hover:bg-secondary/80 border border-border"
-                    }`}
-                  >
-                    <span className="text-xs">{format(date, "EEE")}</span>
-                    <span className="text-lg font-semibold">{format(date, "d")}</span>
-                    <span className="text-xs">{format(date, "MMM")}</span>
-                  </button>
-                ))}
+              <div className="relative">
+                <div className="flex gap-3 overflow-x-auto pb-3 px-1 snap-x snap-mandatory scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  {availableDates.map((date, index) => {
+                    const isSelected = format(selectedDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
+                    const isToday = format(new Date(), "yyyy-MM-dd") === format(date, "yyyy-MM-dd");
+                    
+                    return (
+                      <button
+                        key={date.toISOString()}
+                        onClick={() => {
+                          setSelectedDate(date);
+                          setSelectedSeatIds([]);
+                        }}
+                        className={`flex flex-col items-center justify-center px-4 py-3 rounded-xl min-w-[72px] transition-all duration-200 flex-shrink-0 snap-start ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105"
+                            : "bg-secondary/80 text-muted-foreground hover:bg-secondary hover:scale-102 border border-border/50"
+                        }`}
+                      >
+                        <span className={`text-[10px] uppercase tracking-wide font-medium ${isSelected ? "text-primary-foreground/80" : ""}`}>
+                          {isToday ? "Today" : format(date, "EEE")}
+                        </span>
+                        <span className="text-xl font-bold mt-0.5">{format(date, "d")}</span>
+                        <span className={`text-[10px] uppercase tracking-wide ${isSelected ? "text-primary-foreground/80" : ""}`}>
+                          {format(date, "MMM")}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Scroll indicator gradient */}
+                <div className="absolute right-0 top-0 bottom-3 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none" />
               </div>
             </div>
 
